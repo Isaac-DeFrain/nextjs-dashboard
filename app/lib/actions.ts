@@ -11,15 +11,33 @@ const sql = postgres(process.env.POSTGRES_PRISMA_DATABASE_URL!, {
 
 const FormSchema = z.object({
   id: z.string(),
-  customerId: z.string(),
-  amount: z.coerce.number(),
-  status: z.enum(["pending", "paid"]),
+  customerId: z.string({ invalid_type_error: "Please select a customer." }),
+  amount: z.coerce
+    .number()
+    .gt(0, { message: "Please enter an amount greater than $0." }),
+  status: z.enum(["pending", "paid"], {
+    invalid_type_error: "Please select an invoice status.",
+  }),
   date: z.string(),
 });
 
 const CreateInvoiceSchema = FormSchema.omit({ id: true, date: true });
 
-export async function createInvoice(formData: FormData) {
+export type State = {
+  errors?: {
+    customerId?: string[];
+    amount?: string[];
+    status?: string[];
+  };
+  message?: string | null;
+  values?: {
+    customerId?: string;
+    amount?: string;
+    status?: string;
+  };
+};
+
+export async function createInvoice(_prevState: State, formData: FormData) {
   const rawFormData = {
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
@@ -30,8 +48,15 @@ export async function createInvoice(formData: FormData) {
   const data = CreateInvoiceSchema.safeParse(rawFormData);
   if (!data.success) {
     const errors = data.error.flatten().fieldErrors;
-    console.log("Validation error:", errors);
-    throw new Error("Invalid form data");
+    return {
+      errors,
+      message: `Missing required fields. Failed to create invoice.`,
+      values: {
+        customerId: String(rawFormData.customerId ?? ""),
+        amount: String(rawFormData.amount ?? ""),
+        status: String(rawFormData.status ?? ""),
+      },
+    };
   }
 
   // Prepare the data for insertion
@@ -47,7 +72,7 @@ export async function createInvoice(formData: FormData) {
         `;
   } catch (error) {
     console.error("Failed to create invoice:", error);
-    throw new Error("Database Error: Failed to create invoice");
+    return { message: "Database Error: Failed to create invoice" };
   }
 
   revalidatePath("/dashboard/invoices");
