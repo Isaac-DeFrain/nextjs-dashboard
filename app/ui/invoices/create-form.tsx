@@ -10,17 +10,14 @@ import {
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/app/ui/button";
-import { State, createInvoice } from "@/app/lib/actions";
+import { CreateInvoiceState, createInvoice } from "@/app/lib/actions";
 
 type FormProps = {
   customers: CustomerField[];
 };
 
 export default function Form({ customers }: FormProps) {
-  const initialState: State = {
-    errors: {},
-    message: null,
-  };
+  const initialState: CreateInvoiceState = {};
   const [state, formAction] = useActionState(createInvoice, initialState);
 
   return (

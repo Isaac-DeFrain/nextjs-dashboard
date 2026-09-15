@@ -23,13 +23,13 @@ const FormSchema = z.object({
 
 const CreateInvoiceSchema = FormSchema.omit({ id: true, date: true });
 
-export type State = {
+export type CreateInvoiceState = {
   errors?: {
     customerId?: string[];
     amount?: string[];
     status?: string[];
   };
-  message?: string | null;
+  message?: string;
   values?: {
     customerId?: string;
     amount?: string;
@@ -37,7 +37,10 @@ export type State = {
   };
 };
 
-export async function createInvoice(_prevState: State, formData: FormData) {
+export async function createInvoice(
+  _prevState: CreateInvoiceState,
+  formData: FormData,
+) {
   const rawFormData = {
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
@@ -81,7 +84,14 @@ export async function createInvoice(_prevState: State, formData: FormData) {
 
 const UpdateInvoiceSchema = FormSchema.omit({ id: true, date: true });
 
-export async function updateInvoice(id: string, formData: FormData) {
+export type UpdateInvoiceState = CreateInvoiceState & {
+  id: string;
+};
+
+export async function updateInvoice(
+  prevState: UpdateInvoiceState,
+  formData: FormData,
+) {
   const rawFormData = {
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
@@ -92,8 +102,16 @@ export async function updateInvoice(id: string, formData: FormData) {
   const data = UpdateInvoiceSchema.safeParse(rawFormData);
   if (!data.success) {
     const errors = data.error.flatten().fieldErrors;
-    console.error("Validation error:", errors);
-    throw new Error("Invalid form data");
+    return {
+      id: prevState.id,
+      errors,
+      message: `Missing required fields. Failed to update invoice.`,
+      values: {
+        customerId: String(rawFormData.customerId ?? ""),
+        amount: String(rawFormData.amount ?? ""),
+        status: String(rawFormData.status ?? ""),
+      },
+    };
   }
 
   // Prepare the data for update
@@ -105,11 +123,14 @@ export async function updateInvoice(id: string, formData: FormData) {
   try {
     await sql`UPDATE invoices
               SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}, date = ${date}
-              WHERE id = ${id}
+              WHERE id = ${prevState.id}
             `;
   } catch (error) {
     console.error("Failed to update invoice:", error);
-    throw new Error("Database Error: Failed to update invoice");
+    return {
+      id: prevState.id,
+      message: "Database Error: Failed to update invoice",
+    };
   }
 
   revalidatePath("/dashboard/invoices");
