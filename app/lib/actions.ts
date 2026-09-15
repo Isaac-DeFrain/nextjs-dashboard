@@ -5,6 +5,10 @@ import postgres from "postgres";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+const sql = postgres(process.env.POSTGRES_PRISMA_DATABASE_URL!, {
+  ssl: "require",
+});
+
 const FormSchema = z.object({
   id: z.string(),
   customerId: z.string(),
@@ -14,10 +18,6 @@ const FormSchema = z.object({
 });
 
 const CreateInvoiceSchema = FormSchema.omit({ id: true, date: true });
-
-const sql = postgres(process.env.POSTGRES_PRISMA_DATABASE_URL!, {
-  ssl: "require",
-});
 
 export async function createInvoice(formData: FormData) {
   const rawFormData = {
@@ -31,7 +31,7 @@ export async function createInvoice(formData: FormData) {
   if (!data.success) {
     const errors = data.error.flatten().fieldErrors;
     console.log("Validation error:", errors);
-    return;
+    throw new Error("Invalid form data");
   }
 
   // Prepare the data for insertion
@@ -47,7 +47,7 @@ export async function createInvoice(formData: FormData) {
         `;
   } catch (error) {
     console.error("Failed to create invoice:", error);
-    return;
+    throw new Error("Database Error: Failed to create invoice");
   }
 
   revalidatePath("/dashboard/invoices");
@@ -67,8 +67,8 @@ export async function updateInvoice(id: string, formData: FormData) {
   const data = UpdateInvoiceSchema.safeParse(rawFormData);
   if (!data.success) {
     const errors = data.error.flatten().fieldErrors;
-    console.log("Validation error:", errors);
-    return;
+    console.error("Validation error:", errors);
+    throw new Error("Invalid form data");
   }
 
   // Prepare the data for update
@@ -84,7 +84,7 @@ export async function updateInvoice(id: string, formData: FormData) {
             `;
   } catch (error) {
     console.error("Failed to update invoice:", error);
-    return;
+    throw new Error("Database Error: Failed to update invoice");
   }
 
   revalidatePath("/dashboard/invoices");
@@ -96,7 +96,7 @@ export async function deleteInvoice(id: string) {
     await sql`DELETE FROM invoices WHERE id = ${id}`;
   } catch (error) {
     console.error("Failed to delete invoice:", error);
-    return;
+    throw new Error("Database Error: Failed to delete invoice");
   }
 
   revalidatePath("/dashboard/invoices");
