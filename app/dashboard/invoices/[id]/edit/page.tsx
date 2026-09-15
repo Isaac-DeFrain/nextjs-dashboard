@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { fetchCustomers, fetchInvoiceById } from "@/app/lib/data";
 import Breadcrumbs from "@/app/ui/invoices/breadcrumbs";
-import Form from "@/app/ui/invoices/edit-form";
+import EditInvoiceForm from "@/app/ui/invoices/edit-form";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -29,7 +29,7 @@ export default async function Page({ params }: PageProps) {
           },
         ]}
       />
-      <Form invoice={invoice} customers={customers} />
+      <EditInvoiceForm invoice={invoice} customers={customers} />
     </main>
   );
 }

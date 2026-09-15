@@ -11,12 +11,15 @@ import {
 } from "@heroicons/react/24/outline";
 import { Button } from "@/app/ui/button";
 import { CreateInvoiceState, createInvoice } from "@/app/lib/actions";
+import { ErrorsDisplay, ErrorMessageDisplay } from "./errors";
 
-type FormProps = {
+type CreateInvoiceFormProps = {
   customers: CustomerField[];
 };
 
-export default function Form({ customers }: FormProps) {
+export default function CreateInvoiceForm({
+  customers,
+}: CreateInvoiceFormProps) {
   const initialState: CreateInvoiceState = {};
   const [state, formAction] = useActionState(createInvoice, initialState);
 
@@ -50,14 +53,10 @@ export default function Form({ customers }: FormProps) {
             </select>
             <UserCircleIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500" />
           </div>
-          <div id="customer-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.customerId &&
-              state.errors.customerId.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <ErrorsDisplay
+            errors={state.errors?.customerId}
+            id="customer-error"
+          />
         </div>
 
         {/* Invoice Amount */}
@@ -79,14 +78,7 @@ export default function Form({ customers }: FormProps) {
               />
               <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
-            <div id="amount-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.amount &&
-                state.errors.amount.map((error: string) => (
-                  <p className="mt-2 text-sm text-red-500" key={error}>
-                    {error}
-                  </p>
-                ))}
-            </div>
+            <ErrorsDisplay errors={state.errors?.amount} id="amount-error" />
           </div>
         </div>
 
@@ -134,23 +126,10 @@ export default function Form({ customers }: FormProps) {
               </div>
             </div>
           </div>
-          <div id="status-error" aria-live="polite" aria-atomic="true">
-            {state.errors?.status &&
-              state.errors.status.map((error: string) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-          </div>
+          <ErrorsDisplay errors={state.errors?.status} id="status-error" />
         </fieldset>
       </div>
-      <div id="create-invoice-error" aria-live="polite" aria-atomic="true">
-        {state.message && (
-          <div className="mb-4 rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-500">{state.message}</p>
-          </div>
-        )}
-      </div>
+      <ErrorMessageDisplay message={state.message} id="create-invoice-error" />
       <div className="mt-6 flex justify-end gap-4">
         <Link
           href="/dashboard/invoices"
